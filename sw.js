@@ -4,7 +4,7 @@
    Bump CACHE_VERSION whenever index.html changes, otherwise installed
    copies keep serving the old build from cache.
 ══════════════════════════════════════════════════════════ */
-const CACHE_VERSION = 'rams-v11';
+const CACHE_VERSION = 'rams-v13';
 const APP_SHELL = [
   './',
   'index.html',       // the actual app — RAMSAPP.HTML only redirects here
@@ -21,10 +21,11 @@ const APP_SHELL = [
 /* Third-party libraries the app depends on — precached so the very
    first offline launch already works. */
 const VENDOR = [
+  'gsf.woff2',   // the app font, served from this folder so it works offline
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-  'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap'
+  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap'
 ];
 
 self.addEventListener('install', (e) => {
