@@ -4,14 +4,14 @@
    Bump CACHE_VERSION whenever index.html changes, otherwise installed
    copies keep serving the old build from cache.
 ══════════════════════════════════════════════════════════ */
-const CACHE_VERSION = 'rams-v18';
+const CACHE_VERSION = 'rams-v19';
 const APP_SHELL = [
   './',
   'index.html',       // the actual app — RAMSAPP.HTML only redirects here
   'RAMSAPP.HTML',
   'manifest.json',
-  'splash.mp4',
-  'logo.png',
+  'inter.woff2',      // the app font (v19)
+  'logo.png',         // opening animation
   'icon-192.png',
   'icon-512.png',
   'icon-maskable-512.png',
@@ -21,11 +21,11 @@ const APP_SHELL = [
 /* Third-party libraries the app depends on — precached so the very
    first offline launch already works. */
 const VENDOR = [
-  'gsf.woff2',   // the app font, served from this folder so it works offline
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.woff2',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-brands-400.woff2',
   'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap'
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
 ];
 
 self.addEventListener('install', (e) => {
@@ -68,27 +68,31 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
 
-  // Navigations: network-first, fall back to cached app shell (offline).
-  // The response is stored under the URL that was actually requested — the
-  // old code filed every navigation under RAMSAPP.HTML, so a fresh index.html
-  // never replaced the stale copy the app was being served from.
+  // Navigations (v19): open from the phone at once, refresh in the background.
+  // The old network-first rule made every launch wait for GitHub before the
+  // app could appear. Now the saved copy opens instantly and a fresh copy is
+  // fetched behind it for next time. A new release still arrives on the same
+  // launch: the new sw.js installs, and the page reloads into it.
   if (req.mode === 'navigate') {
-    e.respondWith((async () => {
+    const refresh = (async () => {
       try {
-        // 'reload' skips the browser's HTTP cache. GitHub Pages serves HTML
-        // with max-age=600, so without this a freshly deployed build kept
-        // showing the previous one for up to ten minutes.
+        // 'reload' skips the browser's HTTP cache (GitHub Pages: max-age=600).
         const fresh = await fetch(req, { cache: 'reload' });
-        const cache = await caches.open(CACHE_VERSION);
-        cache.put(req, fresh.clone());
+        if (fresh && fresh.ok) {
+          const cache = await caches.open(CACHE_VERSION);
+          await cache.put(req, fresh.clone());
+        }
         return fresh;
-      } catch {
-        return (await caches.match(req, { ignoreSearch: true })) ||
-               (await caches.match('index.html')) ||
-               (await caches.match('RAMSAPP.HTML')) ||
-               (await caches.match('./')) ||
-               new Response('Offline', { status: 503 });
-      }
+      } catch { return null; }
+    })();
+    e.respondWith((async () => {
+      const cached = (await caches.match(req, { ignoreSearch: true })) ||
+                     (await caches.match('index.html'));
+      if (cached) { e.waitUntil(refresh); return cached; }
+      return (await refresh) ||
+             (await caches.match('RAMSAPP.HTML')) ||
+             (await caches.match('./')) ||
+             new Response('Offline', { status: 503 });
     })());
     return;
   }
