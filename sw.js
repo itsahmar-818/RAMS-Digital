@@ -4,7 +4,7 @@
    Bump CACHE_VERSION whenever index.html changes, otherwise installed
    copies keep serving the old build from cache.
 ══════════════════════════════════════════════════════════ */
-const CACHE_VERSION = 'rams-v19';
+const CACHE_VERSION = 'rams-v20';
 const APP_SHELL = [
   './',
   'index.html',       // the actual app — RAMSAPP.HTML only redirects here
